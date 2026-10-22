@@ -1,0 +1,17 @@
+/image/
+*.tar
+*.tar.gz
+*.zip
+
+
+.env
+.env.*
+!.env.example
+
+
+/conf/*
+!/conf/README.md
+
+
+.DS_Store
+*.log

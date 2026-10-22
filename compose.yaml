@@ -1,0 +1,58 @@
+# Compose 项目名称，用于统一容器和数据卷名称。
+name: freeswitch-fcc
+
+services:
+  freeswitch:
+    # start.sh 会先从离线 tar 导入此镜像，不会访问 Docker Hub。
+    image: ${FREESWITCH_IMAGE:-local/freeswitch:1.10.12-fcc1.2.1}
+    container_name: freeswitch-fcc
+    # 异常退出或宿主机重启后自动恢复，手工停止时不会立即自动拉起。
+    restart: unless-stopped
+    # SIP/RTP 直接使用宿主机网络，避免映射大范围 RTP UDP 端口。
+    network_mode: host
+    # 可在 .env 中调整；0 表示默认不限制，由宿主机调度。
+    cpus: ${FREESWITCH_CPUS:-0.0}
+    mem_limit: ${FREESWITCH_MEMORY_LIMIT:-0}
+    mem_reservation: ${FREESWITCH_MEMORY_RESERVATION:-0}
+    environment:
+      # 容器时区。
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      # 数据库、日志和录音使用 named volume，重建容器不会丢失。
+      - freeswitch-db:/usr/local/freeswitch/var/lib/freeswitch/db
+      - freeswitch-log:/usr/local/freeswitch/var/log/freeswitch
+      - freeswitch-recordings:/usr/local/freeswitch/var/lib/freeswitch/recordings
+      # 为商业模块提供稳定的宿主机标识；模块只上传该值的 SHA-256。
+      - /etc/machine-id:/etc/machine-id:ro
+      # 完整、可写的 FreeSWITCH 配置目录。
+      # 首次启动缺少 conf/freeswitch.xml 时，会从镜像释放完整默认配置；
+      # 后续启动不会覆盖宿主机已经修改的配置。
+      # 冒号左侧 ./conf 是相对于 compose.yaml 的宿主机路径，可以改成绝对路径；
+      # 冒号右侧容器配置路径请勿修改。
+      - ./conf:/usr/local/freeswitch/etc/freeswitch
+    # PID 等运行时文件只存在于内存，容器重启时自动清理。
+    tmpfs:
+      - /usr/local/freeswitch/var/run/freeswitch:uid=499,gid=499,mode=0755
+    # 允许 FreeSWITCH 调整线程调度优先级，降低实时音频抖动。
+    cap_add:
+      - SYS_NICE
+    security_opt:
+      # 禁止容器进程通过 setuid 等方式获得额外权限。
+      - no-new-privileges:true
+    ulimits:
+      # 提高并发连接和媒体文件所需的文件描述符上限。
+      nofile:
+        soft: 65536
+        hard: 65536
+      # 允许实时调度优先级；需要与 SYS_NICE 配合。
+      rtprio:
+        soft: 99
+        hard: 99
+    # 停止时最多等待 30 秒，让 FreeSWITCH正常结束通话并退出。
+    stop_grace_period: 30s
+
+volumes:
+  # 删除容器不会删除这些卷；不要在生产环境随意执行 docker compose down -v。
+  freeswitch-db:
+  freeswitch-log:
+  freeswitch-recordings:
