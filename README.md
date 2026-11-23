@@ -20,7 +20,16 @@
 - `mod_shout`，支持 MP3 播放及 Icecast/SHOUTcast
 - `mod_sofia`、`mod_event_socket`、`mod_conference`、`mod_fifo`、`mod_distributor`、`mod_limit` 等呼叫中心常用模块
 - CD 音质提示音和 MOH 等待音乐
+- 
+## Docker Hub 镜像
 
+在装有 Docker 的 Linux x86_64 主机上，执行以下命令即可拉取包含 `mod_taering_stream` 0.55 的 FreeSWITCH 1.10.12 镜像：
+
+```bash
+docker pull taering/freeswitch-fcc:1.10.12-fcc1.2.1-taering0.55-20261122
+```
+
+该标签的平台为 `linux/amd64`。其他可用标签见 [Docker Hub 标签列表](https://hub.docker.com/r/taering/freeswitch-fcc/tags)。
 ## 1. 离线部署包
 
 使用者只需要取得一个完整离线包：
